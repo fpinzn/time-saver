@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
-
-pipenv run python alert-distractions.py
+export LANG=en_US.UTF-8
+/usr/local/bin/pipenv run python alert-distractions.py
