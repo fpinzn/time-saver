@@ -8,7 +8,7 @@ from functools import reduce
 ANALYTIC_DATA_ENPOINT = 'https://www.rescuetime.com/anapi/data'
 ROW_HEADERS_STRING = "['Date', 'Time Spent (seconds)', 'Number of People', 'Activity', 'Category', 'Productivity']"
 ACTIVITIES_TO_AVOID = ['netflix.com', 'imgur.com']
-FILE_NAME = 'lostseconds'
+FILE_NAME = 'lostseconds.txt'
 SECONDS_TO_NOTIFY = 60 * 60 # 1 hour
 
 def get_request_url():
@@ -53,22 +53,26 @@ def get_saved_lost_seconds():
         except (ValueError, IndexError):
             print('The file with the saved information is corrupted')
 
-    return saved_seconds, last_time_checked
+    return saved_seconds
 
 def save_lost_seconds(lost_seconds):
-    if (os.access(FILE_NAME, os.W_OK)):
-        file = open(FILE_NAME, 'w')
-        contents = str(datetime.now()) + ',' + str(lost_seconds)
-        file.write(contents)
-        file.close()
-    else:
-        print(f'Unable to write to the {FILE_NAME} file to store lost seconds')
+    # if (os.access(FILE_NAME, os.W_OK)):
+    file = open(FILE_NAME, 'w')
+    contents = str(datetime.now()) + ',' + str(lost_seconds)
+    file.write(contents)
+    file.close()
+    # else:
+    #     print(f'Unable to write to the {FILE_NAME} file to store lost seconds')
 
 
 def run ():
     api_response = get_rescue_time_info()
     lost_seconds =  get_lost_seconds(api_response)
-    previously_lost_seconds, last_time_checked = get_saved_lost_seconds()
+
+    import os
+    print(os.getcwd())
+
+    previously_lost_seconds = get_saved_lost_seconds()
 
     save_lost_seconds(lost_seconds)
 
