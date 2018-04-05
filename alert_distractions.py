@@ -3,6 +3,7 @@ import os
 from datetime import date
 from datetime import timedelta
 from datetime import datetime
+from dateutil import parser
 from functools import reduce
 
 ANALYTIC_DATA_ENPOINT = 'https://www.rescuetime.com/anapi/data'
@@ -29,6 +30,7 @@ def get_rescue_time_info():
     r = requests.get(get_request_url())
     return r.json()
 
+
 def get_lost_seconds(rescue_time_info):
     assert str(rescue_time_info['row_headers']) == ROW_HEADERS_STRING,'It seems the Rescue Time API has changed'
 
@@ -42,18 +44,19 @@ def get_lost_seconds(rescue_time_info):
 
 def get_saved_lost_seconds():
     saved_seconds = 0
+    last_time_checked = datetime.now()
 
     if os.path.exists(FILE_NAME):
         file = open(FILE_NAME, 'r')
         try:
             contents = file.read().split(',')
-            last_time_checked = contents[0]
+            last_time_checked = parser.parse(contents[0])
             saved_seconds = int(contents[1])
             file.close()
         except (ValueError, IndexError):
             print('The file with the saved information is corrupted')
 
-    return saved_seconds
+    return saved_seconds, last_time_checked
 
 def save_lost_seconds(lost_seconds):
     # if (os.access(FILE_NAME, os.W_OK)):
@@ -64,6 +67,12 @@ def save_lost_seconds(lost_seconds):
     # else:
     #     print(f'Unable to write to the {FILE_NAME} file to store lost seconds')
 
+def should_notify( current_count,
+                   previous_count,
+                   previous_date):
+
+    return previous_count + SECONDS_TO_NOTIFY <= current_count or datetime.now().day != previous_date.day
+
 
 def run ():
     api_response = get_rescue_time_info()
@@ -72,11 +81,11 @@ def run ():
     import os
     print(os.getcwd())
 
-    previously_lost_seconds = get_saved_lost_seconds()
+    previously_lost_seconds, previous_date = get_saved_lost_seconds()
 
     save_lost_seconds(lost_seconds)
 
-    if previously_lost_seconds + SECONDS_TO_NOTIFY < lost_seconds:
+    if should_notify(lost_seconds, previously_lost_seconds, previous_date):
         subtitle = 'netflix and imgur hours last 7 days'
         title = str(timedelta(seconds=lost_seconds))
         os.system("""
